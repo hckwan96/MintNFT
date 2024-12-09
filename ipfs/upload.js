@@ -1,36 +1,87 @@
+import dotenv from 'dotenv';
+import { createHelia } from "helia";
+import { dagJson } from "@helia/dag-json";
+
+if (typeof global.CustomEvent !== "function") {
+    global.CustomEvent = class CustomEvent extends Event {
+      constructor(event, params = { bubbles: false, cancelable: false, detail: null }) {
+        super(event, params);
+        this.detail = params.detail;
+      }
+    };
+  }
+
+
 async function run() {
-    const { create } = await import('ipfs-http-client');
-    const ipfs = await create();
-    
-    // we added three attributes, add as many as you want!
+    const helia = await createHelia();
+    const ipfs = dagJson(helia);
+
     const metadata = {
-        path: '/',
-        content: JSON.stringify({
-            name: "My First NFT",
-            attributes: [
+        name: "My First NFT",
+        attributes: [
             {
-                "trait_type": "Peace",
+                "trait_type": "Zoom Background",
                 "value": "10" 
             },
             {
-                "trait_type": "Love",
+                "trait_type": "Yellow",
                 "value": "100"
             },
             {
-                "trait_type": "Web3",
+                "trait_type": "Visiber Logo",
+                "value": "1000"
+            },
+            {
+                "trait_type": "57Society Logo",
                 "value": "1000"
             }
-            ],
-            // update the IPFS CID to be your image CID
-            image: "https://ipfs.io/ipfs/QmQ2wnwaFJ1w42UTywTWpM8RgiqrWwKFR6AMrpyiHPgi3p",
-            description: "So much PLW3!"
-        })
+        ],
+        image: "https://ipfs.io/ipfs/QmPgmrbXTfHPV7ZaNZhsmrmz8foJZQ4LoETakCSdJFPaAw",
+        description: "Zoom background image"
     };
 
-    const result = await ipfs.add(metadata);
-    console.log(result);
 
-    process.exit(0);
+    try {
+        const result = await ipfs.add(metadata);
+
+        const linkMeta = {link : result};
+        const myLinkMetaAddress = await ipfs.add(linkMeta);
+
+        const retrievedObject = await ipfs.get(myLinkMetaAddress);
+
+        console.log("myLinkMetaAddress", myLinkMetaAddress)
+        console.log("retrievedObject", retrievedObject)
+
+        // const object1 = {hello: 'world from Asia'};
+        // const myImmutableAddress1 = await ipfs.add(object1);
+
+        // const object2 = {link : myImmutableAddress1};
+        // const myImmutableAddress2 = await ipfs.add(object2);
+
+        // const retrievedObject1 = await ipfs.get(myImmutableAddress2);
+        // console.log(retrievedObject1)
+
+
+        console.log('IPFS Upload Result:', result);
+        // console.log('Metadata URL:', `https://ipfs.io/ipfs/${result.path}`);
+        // Verify the upload
+        // try {
+        //     const verified = await ipfs.pin.ls(result.path);
+        //     console.log('Pin verification:', verified);
+        // } catch (pinError) {
+        //     console.warn('Pin verification failed:', pinError.message);
+        // }
+    } catch (error) {
+        console.error('Error uploading to IPFS:', error);
+        if (error.message) {
+            console.error('Error message:', error.message);
+        }
+    }
 }
 
-run();
+run()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error('Error in main process:', error);
+        process.exit(1);
+    });
